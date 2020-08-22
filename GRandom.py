@@ -11,3 +11,6 @@ class RandomGenerator():
         
     def random_real(self, min, max):
         return self.random.uniform(min,max)
+        
+    def random_choice(self, sequence):
+        return self.random.choice(sequence)

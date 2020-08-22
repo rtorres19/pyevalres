@@ -1,71 +1,83 @@
-import itertools
+from itertools import accumulate
+from inspect import getsource
+import re
 
 EMPTY_STRING = ""
-def turn_iterable_to_string_using(elements, format_fun):
-    numberOfElements = len(elements)
-    if numberOfElements==0:
-        return "[]"
-    
-    formattedString = EMPTY_STRING
-    for i in range(numberOfElements):
-        element = elements[i]
-        formattedElement = format_fun(element)
-        readyToConcat = give_list_format(formattedElement, i, numberOfElements)
-        formattedString += readyToConcat
+def map_and_str(format_fun, elements, firstChar='[', lastChar=']'):
+    strIterable = ', '.join(map(format_fun, elements))
+    return firstChar+strIterable+lastChar
+
+def function_to_str(function):
+    if function==None:
+        return None
+    try:
+        # patt = re.compile(r'\b(' + '|'.join(function.__dict__.keys()) + r')\b')
+        # s = patt.sub(lambda x: function.__dict__[x.group()] if x.group in function.__dict__ else '', getsource(function))
+        # return s
+        return getsource(function)
+    except OSError:
+        return function.__name__
+    except TypeError:
+        try:
+            # patt = re.compile(r'\bself.(' + '|'.join(function.__dict__.keys()) + r')\b')
+            # selfpatt = re.compile(r'^self.')
+            # s = patt.sub(lambda x: str(function.__dict__[selfpatt.sub('',x.group())]), getsource(function.__call__))
+            # return s
+            return getsource(function.__call__)
+        except:
+            raise
         
-    return formattedString
-    
-def give_list_format(stringToFormat, positionInList, numberOfElements):
-    if numberOfElements == 0:
-        return "[]"
-        
-    last = numberOfElements - 1
-    
-    if positionInList == 0:
-        beginOfString = "["
-    else:
-        beginOfString = ", "
-        
-    if positionInList == last:
-        endOfString = "]"
-    else:
-        endOfString = ""
-        
-    return beginOfString + stringToFormat + endOfString
-    
 def print_and_wait(x):
     print(x)
     input("Press Enter...")
     
-def merge_sort_and_unpack_using_2nd_list(elements, sortingKeys):
-    mergedList = list(zip(elements, sortingKeys))
-    mergedList.sort(key=lambda x: x[1])
-    for i in range(len(elements)):
-        elements[i] = mergedList[i][0]
-        sortingKeys[i] = mergedList[i][1]
-        
-def get_best(elements, keyList):
-    mergedList = list(zip(elements, keyList))
-    bestElement = max(mergedList, key=lambda x: x[1])[0]
+def sort_using_2nd_list(elements, sortingKeys):
+    mergedList = zip(elements, sortingKeys)
+    sortedLists = sorted(mergedList, key=lambda x: x[1])
+    sortedElements = type(elements)(a for a,b in sortedLists)
+    sortedKeys = type(sortingKeys)(b for a,b in sortedLists)
+    return (sortedElements, sortedKeys)
+    
+def get_best(elements, keyList=None, minimization=False):
+    mergedList = zip(elements, keyList)
+    if minimization==True:
+        bestElement = min(mergedList, key=lambda x: x[1])[0]
+    else:
+        bestElement = max(mergedList, key=lambda x: x[1])[0]
     return bestElement
     
 def normalize(aList):
-    acum = 0
-    for elem in aList:
-        acum += elem
-    return [elem/acum for elem in aList]
+    positiveList = add_offset_for_positive_values(aList)
+    return type(aList)(elem/sum(positiveList) for elem in positiveList)
     
 def add_offset_for_positive_values(aList):
-    offset = min(aList)
-    if offset >= 0:
+    if min(aList) >= 0:
         return aList
     else:
-        return [elem+offset for elem in aList]
-        
+        offset = min(aList)
+        return type(aList)(elem-offset for elem in aList)
+
 def accumulate_sums(aList):
-    return list(itertools.accumulate(aList))
+    return type(aList)(accumulate(aList))
     
 def isinset(subset, superset):
     sub=set(subset)
     super=set(superset)
     return sub<=super
+
+def compare_iterables_by_element(iter1, iter2):
+    iter1, iter2 = iter(iter1), iter(iter2)
+    for elem1 in iter1:
+        try:
+            elem2 = next(iter2)
+        except StopIteration:  #len(iter2)>len(iter1)
+            return False
+        if elem1!=elem2:  #iter1[i]!=iter2[i]
+            return False
+    try:
+        next(iter2)
+    except StopIteration:  #len(iter2)==len(iter1)
+        return True        
+
+    return False  #len(iter2)<len(iter1)
+
